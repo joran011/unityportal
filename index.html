@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="no" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unity Rollespill - Offentlig Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            purple: '#6d28d9',
+                            blue: '#1d4ed8',
+                            darkBg: '#0f172a',
+                            lightBg: '#f8fafc'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .light .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 light:bg-slate-50 light:text-slate-900 min-h-screen font-sans transition-colors duration-300">
+
+    <div id="notification-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-sm w-full"></div>
+
+    <nav class="sticky top-0 z-40 w-full glass shadow-lg backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-blue to-brand-purple flex items-center justify-center text-white font-bold text-xl shadow-lg">U</div>
+                    <span class="font-extrabold text-xl tracking-wider bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">UNITY ROLLESPILL</span>
+                </div>
+                <div class="hidden md:flex items-center gap-6">
+                    <a href="#hero" class="hover:text-purple-400 transition">Hjem</a>
+                    <a href="#om" class="hover:text-purple-400 transition">Om Oss</a>
+                    <a href="#staten" class="hover:text-purple-400 transition">Staten</a>
+                    <a href="#kommunen" class="hover:text-purple-400 transition">Kommunen</a>
+                    <a href="#skjema" class="bg-gradient-to-r from-brand-blue to-brand-purple px-4 py-2 rounded-lg font-medium text-white shadow-md hover:opacity-90 transition">Send Henvendelse</a>
+                    <button id="theme-toggle" class="p-2 rounded-lg bg-slate-800 text-yellow-400 dark:text-yellow-300 light:bg-slate-200 light:text-slate-700">
+                        <i class="fas fa-moon dark:hidden"></i><i class="fas fa-sun hidden dark:inline"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section id="hero" class="relative overflow-hidden py-24 px-4 text-center bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 light:from-slate-100 light:to-white">
+        <div class="absolute inset-0 z-0 opacity-30 mix-blend-screen pointer-events-none">
+            <div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-600 rounded-full filter blur-[120px]"></div>
+            <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-600 rounded-full filter blur-[120px]"></div>
+        </div>
+        <div class="relative z-10 max-w-3xl mx-auto space-y-6">
+            <span class="px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20">Offentlig Digital Portal</span>
+            <h1 class="text-5xl md:text-6xl font-black tracking-tight leading-tight">Kontakt <span class="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Saksbehandlingen</span></h1>
+            <p class="text-lg text-slate-400 max-w-xl mx-auto">Har du en sak til politiet, regjeringen eller kommunale etater? Send inn din henvendelse digitalt for rask og ryddig saksbehandling.</p>
+            <div class="flex justify-center gap-4 pt-4">
+                <a href="#skjema" class="px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-brand-blue to-brand-purple text-white shadow-xl hover:scale-105 transition duration-200">Opprett Ny Sak</a>
+                <a href="#om" class="px-6 py-3 rounded-xl font-bold glass hover:bg-white/5 transition">Les Retningslinjer</a>
+            </div>
+        </div>
+    </section>
+
+    <section id="om" class="max-w-7xl mx-auto px-4 py-16 grid md:grid-cols-3 gap-8">
+        <div class="glass p-8 rounded-2xl shadow-xl transition hover:-translate-y-1">
+            <div class="w-12 h-12 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center text-xl mb-4"><i class="fas fa-balance-scale"></i></div>
+            <h3 class="text-xl font-bold mb-2">Kontakt Staten</h3>
+            <p class="text-sm text-slate-400">Henvendelser angående politi, rettsvesen, militære eller overordnede statlige lisenser og klager.</p>
+        </div>
+        <div class="glass p-8 rounded-2xl shadow-xl transition hover:-translate-y-1">
+            <div class="w-12 h-12 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center text-xl mb-4"><i class="fas fa-city"></i></div>
+            <h3 class="text-xl font-bold mb-2">Kontakt Kommunen</h3>
+            <p class="text-sm text-slate-400">Søknader om bedriftsbevillinger, eiendom, kjøretøy, NAV-tjenester eller lokale arrangementer.</p>
+        </div>
+        <div class="glass p-8 rounded-2xl shadow-xl transition hover:-translate-y-1">
+            <div class="w-12 h-12 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center text-xl mb-4"><i class="fas fa-shield-alt"></i></div>
+            <h3 class="text-xl font-bold mb-2">Sikker Behandling</h3>
+            <p class="text-sm text-slate-400">Alle saker blir kryptert, loggført og behandlet i samsvar med interne personvernregler i Unity.</p>
+        </div>
+    </section>
+
+    <main class="max-w-7xl mx-auto px-4 py-12 grid lg:grid-cols-12 gap-12">
+        <section id="skjema" class="lg:col-span-7 glass p-8 rounded-2xl shadow-2xl relative">
+            <h2 class="text-2xl font-black mb-6 flex items-center gap-3"><i class="fas fa-paper-plane text-purple-500"></i> Send inn digital henvendelse</h2>
+            <form id="public-case-form" class="space-y-5">
+                <div class="grid sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Fullt Navn (In-Game)</label>
+                        <input type="text" id="form-navn" required class="w-full bg-slate-950/50 light:bg-white border border-slate-800 light:border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Discord-brukernavn</label>
+                        <input type="text" id="form-discord" placeholder="eksempel#0000" required class="w-full bg-slate-950/50 light:bg-white border border-slate-800 light:border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">E-postadresse</label>
+                    <input type="email" id="form-epost" required class="w-full bg-slate-950/50 light:bg-white border border-slate-800 light:border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition">
+                </div>
+                <div class="grid sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Mottakeravdeling</label>
+                        <select id="form-avdeling" required class="w-full bg-slate-950 light:bg-white border border-slate-800 light:border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition">
+                            <option value="Staten">Staten (Politi, Regjering)</option>
+                            <option value="Kommunen">Kommunen (Bedrift, Eiendom)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Type Henvendelse</label>
+                        <select id="form-type" required class="w-full bg-slate-950 light:bg-white border border-slate-800 light:border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition">
+                            <option value="Søknad">Søknad / Bevilling</option>
+                            <option value="Klage">Formell Klage</option>
+                            <option value="Anmeldelse">Anmeldelse / Tips</option>
+                            <option value="Annet">Annet</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Emne</label>
+                    <input type="text" id="form-emne" required class="w-full bg-slate-950/50 light:bg-white border border-slate-800 light:border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Beskrivelse (Utdyp din sak)</label>
+                    <textarea id="form-beskrivelse" rows="5" required class="w-full bg-slate-950/50 light:bg-white border border-slate-800 light:border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition"></textarea>
+                </div>
+                <div class="flex items-start gap-3 p-3 bg-slate-950/30 rounded-xl border border-slate-800/50">
+                    <input type="checkbox" id="form-gdpr" required class="mt-1 rounded border-slate-800 text-purple-600 focus:ring-purple-500">
+                    <label for="form-gdpr" class="text-xs text-slate-400 leading-relaxed">Jeg godtar at Unity Rollespill behandler mine oppgitte opplysninger for saksbehandling etter gjeldende personvernregler.</label>
+                </div>
+                <button type="submit" class="w-full py-4 rounded-xl font-bold bg-gradient-to-r from-brand-blue to-brand-purple text-white shadow-xl hover:opacity-95 transition flex items-center justify-center gap-2">
+                    <i class="fas fa-paper-plane"></i> Send Henvendelse digitalt
+                </button>
+            </form>
+        </section>
+
+        <div class="lg:col-span-5 space-y-6">
+            <section class="glass p-6 rounded-2xl">
+                <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-blue-400"><i class="fas fa-gavel"></i> Regler for henvendelser</h3>
+                <ul class="space-y-2.5 text-sm text-slate-400 list-disc list-inside">
+                    <li>Utsagn eller falske anklager straffes in-game.</li>
+                    <li>Saksbehandlingstid er normalt 24-48 timer.</li>
+                    <li>Noter korrekt Discord ID for tilbakesending av svar.</li>
+                    <li>Unngå sensitive personopplysninger (OOC-info).</li>
+                </ul>
+            </section>
+
+            <section class="glass p-6 rounded-2xl">
+                <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-purple-400"><i class="fas fa-question-circle"></i> Ofte stilte spørsmål</h3>
+                <div class="space-y-3">
+                    <details class="group class p-3 rounded-xl border border-slate-800/40 cursor-pointer">
+                        <summary class="font-semibold text-sm flex justify-between items-center list-none">Hvordan sjekker jeg status?<i class="fas fa-chevron-down group-open:rotate-180 transition"></i></summary>
+                        <p class="text-xs text-slate-400 mt-2">Du vil motta en automatisk melding på Discord eller e-post når saken din oppdateres av en saksbehandler.</p>
+                    </details>
+                    <details class="group class p-3 rounded-xl border border-slate-800/40 cursor-pointer">
+                        <summary class="font-semibold text-sm flex justify-between items-center list-none">Kan jeg trekke en sak?<i class="fas fa-chevron-down group-open:rotate-180 transition"></i></summary>
+                        <p class="text-xs text-slate-400 mt-2">Ja, send en henvendelse til administrasjonen med saksnummer for sletting eller anonymisering.</p>
+                    </details>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="w-full border-t border-slate-800/60 light:border-slate-200 mt-24 py-8 text-center text-xs text-slate-500">
+        <p>&copy; 2026 Unity Rollespill. Utviklet som saksbehandlingssystem for Staten & Kommunen.</p>
+    </footer>
+
+    <script>
+        // --- SUPABASE KONFIGURASJON ---
+        // Erstatt med dine faktiske Supabase credentials
+        const SUPABASE_URL = "https://udschyrfpzoyiqqsjbhu.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVkc2NoeXJmcHpveWlxcXNqYmh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA0MzUsImV4cCI6MjA5NTY1NjQzNX0.p49BZjAPJDpJopr8lBmgKDMnaroK-mQYQUOSQmxcV_E";
+
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- TEMA VEKSLING ---
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        themeToggleBtn.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            document.documentElement.classList.toggle('light');
+        });
+
+        // --- UTILITY: VARSLINGER ---
+        function showNotification(message, type = 'success') {
+            const container = document.getElementById('notification-container');
+            const notif = document.createElement('div');
+            notif.className = `p-4 rounded-xl shadow-xl flex items-center gap-3 transition-all duration-300 border ${
+                type === 'success' ? 'bg-emerald-950/90 text-emerald-400 border-emerald-800' : 'bg-rose-950/90 text-rose-400 border-rose-800'
+            }`;
+            notif.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i> <span class="text-sm font-medium">${message}</span>`;
+            container.appendChild(notif);
+            setTimeout(() => { notif.style.opacity = '0'; setTimeout(() => notif.remove(), 300); }, 4000);
+        }
+
+        // --- SIKKER INPUT SANITISERING (XSS-BESKYTTELSE) ---
+        function sanitizeInput(str) {
+            return str.replace(/[&<>"']/g, function(match) {
+                const mask = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;' };
+                return mask[match];
+            });
+        }
+
+        // --- INNSENDING AV SKJEMA ---
+        document.getElementById('public-case-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Hent verdier og sanitiser
+            const navn = sanitizeInput(document.getElementById('form-navn').value.trim());
+            const discord = sanitizeInput(document.getElementById('form-discord').value.trim());
+            const epost = sanitizeInput(document.getElementById('form-epost').value.trim());
+            const avdeling = document.getElementById('form-avdeling').value;
+            const type_henvendelse = document.getElementById('form-type').value;
+            const emne = sanitizeInput(document.getElementById('form-emne').value.trim());
+            const beskrivelse = sanitizeInput(document.getElementById('form-beskrivelse').value.trim());
+
+            try {
+                const { data, error } = await supabase
+                    .from('henvendelser')
+                    .insert([
+                        {
+                            navn,
+                            discord,
+                            epost,
+                            avdeling,
+                            type_henvendelse,
+                            emne,
+                            beskrivelse,
+                            status: 'Ny',
+                            prioritet: 'Normal',
+                            sist_oppdatert: new Date().toISOString()
+                        }
+                    ]);
+
+                if (error) throw error;
+
+                showNotification('Din henvendelse ble sendt og arkivert i systemet!', 'success');
+                document.getElementById('public-case-form').reset();
+            } catch (err) {
+                console.error(err);
+                showNotification('Feil ved innsending: ' + err.message, 'error');
+            }
+        });
+    </script>
+</body>
+</html>
