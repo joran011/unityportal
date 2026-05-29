@@ -183,78 +183,57 @@
     </footer>
 
     <script>
-        // --- SUPABASE KONFIGURASJON ---
-        // Erstatt med dine faktiske Supabase credentials
+        // --- PRE-KONFIGURERTE SUPABASE-DETALJER ---
         const SUPABASE_URL = "https://udschyrfpzoyiqqsjbhu.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVkc2NoeXJmcHpveWlxcXNqYmh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA0MzUsImV4cCI6MjA5NTY1NjQzNX0.p49BZjAPJDpJopr8lBmgKDMnaroK-mQYQUOSQmxcV_E";
 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Bruker 'db' som navn for å unngå krasj med Supabase-biblioteket
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- TEMA VEKSLING ---
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        themeToggleBtn.addEventListener('click', () => {
-            document.documentElement.classList.toggle('dark');
-            document.documentElement.classList.toggle('light');
-        });
-
-        // --- UTILITY: VARSLINGER ---
-        function showNotification(message, type = 'success') {
-            const container = document.getElementById('notification-container');
-            const notif = document.createElement('div');
-            notif.className = `p-4 rounded-xl shadow-xl flex items-center gap-3 transition-all duration-300 border ${
-                type === 'success' ? 'bg-emerald-950/90 text-emerald-400 border-emerald-800' : 'bg-rose-950/90 text-rose-400 border-rose-800'
-            }`;
-            notif.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i> <span class="text-sm font-medium">${message}</span>`;
-            container.appendChild(notif);
-            setTimeout(() => { notif.style.opacity = '0'; setTimeout(() => notif.remove(), 300); }, 4000);
-        }
-
-        // --- SIKKER INPUT SANITISERING (XSS-BESKYTTELSE) ---
-        function sanitizeInput(str) {
-            return str.replace(/[&<>"']/g, function(match) {
-                const mask = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;' };
-                return mask[match];
-            });
-        }
-
-        // --- INNSENDING AV SKJEMA ---
-        document.getElementById('public-case-form').addEventListener('submit', async (e) => {
+        // Håndtering av skjemaet
+        document.getElementById('contact-form').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            // Hent verdier og sanitiser
-            const navn = sanitizeInput(document.getElementById('form-navn').value.trim());
-            const discord = sanitizeInput(document.getElementById('form-discord').value.trim());
-            const epost = sanitizeInput(document.getElementById('form-epost').value.trim());
-            const avdeling = document.getElementById('form-avdeling').value;
-            const type_henvendelse = document.getElementById('form-type').value;
-            const emne = sanitizeInput(document.getElementById('form-emne').value.trim());
-            const beskrivelse = sanitizeInput(document.getElementById('form-beskrivelse').value.trim());
+            // Hent knappen og sett den til "Sender..."
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Sender...';
+
+            // Hent verdier fra skjemaet
+            const formData = {
+                navn: document.getElementById('form-navn').value.trim(),
+                discord: document.getElementById('form-discord').value.trim(),
+                epost: document.getElementById('form-epost').value.trim(),
+                type_henvendelse: document.getElementById('form-type').value,
+                avdeling: document.getElementById('form-avdeling').value,
+                emne: document.getElementById('form-emne').value.trim(),
+                beskrivelse: document.getElementById('form-beskrivelse').value.trim(),
+                status: 'Ny',
+                prioritet: 'Normal',
+                opprettet_dato: new Date().toISOString(),
+                sist_oppdatert: new Date().toISOString()
+            };
 
             try {
-                const { data, error } = await supabase
+                // Send data til Supabase-tabellen via 'db'-klienten
+                const { error } = await db
                     .from('henvendelser')
-                    .insert([
-                        {
-                            navn,
-                            discord,
-                            epost,
-                            avdeling,
-                            type_henvendelse,
-                            emne,
-                            beskrivelse,
-                            status: 'Ny',
-                            prioritet: 'Normal',
-                            sist_oppdatert: new Date().toISOString()
-                        }
-                    ]);
+                    .insert([formData]);
 
                 if (error) throw error;
 
-                showNotification('Din henvendelse ble sendt og arkivert i systemet!', 'success');
-                document.getElementById('public-case-form').reset();
+                // Suksess: Vis melding og tøm skjemaet
+                alert('Takk! Henvendelsen din er mottatt og vil bli behandlet fortløpende.');
+                e.target.reset();
+
             } catch (err) {
-                console.error(err);
-                showNotification('Feil ved innsending: ' + err.message, 'error');
+                console.error('Feil ved innsending:', err);
+                alert('Det oppstod en feil under innsending: ' + (err.message || err));
+            } finally {
+                // Sett knappen tilbake til normalen
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
             }
         });
     </script>
