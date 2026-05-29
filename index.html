@@ -182,59 +182,68 @@
         <p>&copy; 2026 Unity Rollespill. Utviklet som saksbehandlingssystem for Staten & Kommunen.</p>
     </footer>
 
-    <script>
+   <script>
         // --- PRE-KONFIGURERTE SUPABASE-DETALJER ---
         const SUPABASE_URL = "https://udschyrfpzoyiqqsjbhu.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVkc2NoeXJmcHpveWlxcXNqYmh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA0MzUsImV4cCI6MjA5NTY1NjQzNX0.p49BZjAPJDpJopr8lBmgKDMnaroK-mQYQUOSQmxcV_E";
 
-        // Bruker 'db' som navn for å unngå krasj med Supabase-biblioteket
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Håndtering av skjemaet
-        document.getElementById('contact-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            // Hent knappen og sett den til "Sender..."
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalBtnText = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Sender...';
-
-            // Hent verdier fra skjemaet
-            const formData = {
-                navn: document.getElementById('form-navn').value.trim(),
-                discord: document.getElementById('form-discord').value.trim(),
-                epost: document.getElementById('form-epost').value.trim(),
-                type_henvendelse: document.getElementById('form-type').value,
-                avdeling: document.getElementById('form-avdeling').value,
-                emne: document.getElementById('form-emne').value.trim(),
-                beskrivelse: document.getElementById('form-beskrivelse').value.trim(),
-                status: 'Ny',
-                prioritet: 'Normal',
-                opprettet_dato: new Date().toISOString(),
-                sist_oppdatert: new Date().toISOString()
-            };
-
-            try {
-                // Send data til Supabase-tabellen via 'db'-klienten
-                const { error } = await db
-                    .from('henvendelser')
-                    .insert([formData]);
-
-                if (error) throw error;
-
-                // Suksess: Vis melding og tøm skjemaet
-                alert('Takk! Henvendelsen din er mottatt og vil bli behandlet fortløpende.');
-                e.target.reset();
-
-            } catch (err) {
-                console.error('Feil ved innsending:', err);
-                alert('Det oppstod en feil under innsending: ' + (err.message || err));
-            } finally {
-                // Sett knappen tilbake til normalen
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
+        // Sikrer at HTML-en er helt ferdig lastet før vi ser etter skjemaet
+        window.addEventListener('DOMContentLoaded', () => {
+            const contactForm = document.getElementById('contact-form');
+            
+            if (!contactForm) {
+                console.error("KRITISK FEIL: Fant ikke et <form> med id='contact-form' på denne siden. Sjekk HTML-koden din!");
+                return;
             }
+
+            contactForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                // Hent knappen og sett den til "Sender..."
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn ? submitBtn.innerHTML : "Send";
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Sender...';
+                }
+
+                // Hent verdier fra skjemaet (Sjekk at disse ID-ene matcher dine input-felter)
+                const formData = {
+                    navn: document.getElementById('form-navn')?.value?.trim() || "Anonym",
+                    discord: document.getElementById('form-discord')?.value?.trim() || "Ikke oppgitt",
+                    epost: document.getElementById('form-epost')?.value?.trim() || "Ikke oppgitt",
+                    type_henvendelse: document.getElementById('form-type')?.value || "Generelt",
+                    avdeling: document.getElementById('form-avdeling')?.value || "Kommunen",
+                    emne: document.getElementById('form-emne')?.value?.trim() || "Ingen emne",
+                    beskrivelse: document.getElementById('form-beskrivelse')?.value?.trim() || "",
+                    status: 'Ny',
+                    prioritet: 'Normal',
+                    opprettet_dato: new Date().toISOString(),
+                    sist_oppdatert: new Date().toISOString()
+                };
+
+                try {
+                    const { error } = await db
+                        .from('henvendelser')
+                        .insert([formData]);
+
+                    if (error) throw error;
+
+                    alert('Takk! Henvendelsen din er mottatt og vil bli behandlet fortløpende.');
+                    e.target.reset();
+
+                } catch (err) {
+                    console.error('Feil ved innsending:', err);
+                    alert('Det oppstod en feil under innsending: ' + (err.message || err));
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnText;
+                    }
+                }
+            });
         });
     </script>
 </body>
