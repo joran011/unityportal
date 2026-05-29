@@ -189,14 +189,16 @@
 
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Sikrer at HTML-en er helt ferdig lastet før vi ser etter skjemaet
         window.addEventListener('DOMContentLoaded', () => {
-            const contactForm = document.getElementById('contact-form');
+            // Leter etter id="contact-form" først, hvis ikke tar den det første <form>-elementet på siden
+            const contactForm = document.getElementById('contact-form') || document.querySelector('form');
             
             if (!contactForm) {
-                console.error("KRITISK FEIL: Fant ikke et <form> med id='contact-form' på denne siden. Sjekk HTML-koden din!");
+                console.error("KRITISK FEIL: Fant absolutt ingen <form>-elementer på denne siden!");
                 return;
             }
+
+            console.log("Suksess: Koblet skriptet til skjemaet!");
 
             contactForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -209,15 +211,15 @@
                     submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Sender...';
                 }
 
-                // Hent verdier fra skjemaet (Sjekk at disse ID-ene matcher dine input-felter)
+                // Hent verdier basert på enten ID eller name-attributter for å være bombesikker
                 const formData = {
-                    navn: document.getElementById('form-navn')?.value?.trim() || "Anonym",
-                    discord: document.getElementById('form-discord')?.value?.trim() || "Ikke oppgitt",
-                    epost: document.getElementById('form-epost')?.value?.trim() || "Ikke oppgitt",
-                    type_henvendelse: document.getElementById('form-type')?.value || "Generelt",
-                    avdeling: document.getElementById('form-avdeling')?.value || "Kommunen",
-                    emne: document.getElementById('form-emne')?.value?.trim() || "Ingen emne",
-                    beskrivelse: document.getElementById('form-beskrivelse')?.value?.trim() || "",
+                    navn: (document.getElementById('form-navn') || e.target.querySelector('[name="navn"]'))?.value?.trim() || "Anonym",
+                    discord: (document.getElementById('form-discord') || e.target.querySelector('[name="discord"]'))?.value?.trim() || "Ikke oppgitt",
+                    epost: (document.getElementById('form-epost') || e.target.querySelector('[name="epost"]'))?.value?.trim() || "Ikke oppgitt",
+                    type_henvendelse: (document.getElementById('form-type') || e.target.querySelector('[name="type"]'))?.value || "Generelt",
+                    avdeling: (document.getElementById('form-avdeling') || e.target.querySelector('[name="avdeling"]'))?.value || "Kommunen",
+                    emne: (document.getElementById('form-emne') || e.target.querySelector('[name="emne"]'))?.value?.trim() || "Ingen emne",
+                    beskrivelse: (document.getElementById('form-beskrivelse') || e.target.querySelector('[name="beskrivelse"]'))?.value?.trim() || "",
                     status: 'Ny',
                     prioritet: 'Normal',
                     opprettet_dato: new Date().toISOString(),
@@ -235,7 +237,7 @@
                     e.target.reset();
 
                 } catch (err) {
-                    console.error('Feil ved innsending:', err);
+                    console.error('Feil beim innsending:', err);
                     alert('Det oppstod en feil under innsending: ' + (err.message || err));
                 } finally {
                     if (submitBtn) {
