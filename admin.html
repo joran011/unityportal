@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="no" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unity Admin - Saksbehandling</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: { brand: { purple: '#6d28d9', blue: '#1d4ed8' } } } }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .light .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(0, 0, 0, 0.05); }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 light:bg-slate-100 light:text-slate-900 font-sans min-h-screen transition-colors duration-300">
+
+    <div id="notification-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-sm w-full"></div>
+
+    <div id="app-container">
+        <header class="glass sticky top-0 z-30 px-6 py-4 flex items-center justify-between border-b border-slate-900">
+            <div class="flex items-center gap-4">
+                <h1 class="text-xl font-black tracking-wider text-purple-500">UNITY CENTRAL</h1>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">Direkte Tilgang</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <button id="theme-toggle" class="p-2 rounded-lg bg-slate-900 border border-slate-800 text-yellow-400"><i class="fas fa-adjust"></i></button>
+                <div class="text-right">
+                    <p id="user-display" class="text-xs font-bold text-slate-300">Unityadmin (Innlogget)</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="max-w-[1600px] mx-auto p-6 space-y-6">
+            
+            <section class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                <div class="glass p-5 rounded-2xl border-l-4 border-blue-500">
+                    <p class="text-xs font-bold uppercase text-slate-400">Totalt antall saker</p>
+                    <p id="stat-total" class="text-3xl font-black mt-2">0</p>
+                </div>
+                <div class="glass p-5 rounded-2xl border-l-4 border-amber-500">
+                    <p class="text-xs font-bold uppercase text-slate-400">Nye saker</p>
+                    <p id="stat-nye" class="text-3xl font-black mt-2 text-amber-500">0</p>
+                </div>
+                <div class="glass p-5 rounded-2xl border-l-4 border-indigo-500">
+                    <p class="text-xs font-bold uppercase text-slate-400">Under behandling</p>
+                    <p id="stat-behandling" class="text-3xl font-black mt-2 text-indigo-400">0</p>
+                </div>
+                <div class="glass p-5 rounded-2xl border-l-4 border-emerald-500">
+                    <p class="text-xs font-bold uppercase text-slate-400">Ferdig behandlet</p>
+                    <p id="stat-ferdig" class="text-3xl font-black mt-2 text-emerald-400">0</p>
+                </div>
+                <div class="glass p-5 rounded-2xl border-l-4 border-rose-600 col-span-2 lg:col-span-1">
+                    <p class="text-xs font-bold uppercase text-slate-400">Kritiske saker</p>
+                    <p id="stat-kritisk" class="text-3xl font-black mt-2 text-rose-500 animate-pulse">0</p>
+                </div>
+            </section>
+
+            <div class="grid lg:grid-cols-12 gap-6">
+                
+                <div class="lg:col-span-8 space-y-4">
+                    <div class="glass p-6 rounded-2xl space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <h2 class="text-lg font-bold flex items-center gap-2"><i class="fas fa-folder-open text-blue-500"></i> Aktiv Saksoversikt</h2>
+                            <button onclick="exportAllCSV()" class="px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-medium hover:bg-white/5"><i class="fas fa-file-csv"></i> Eksporter CSV</button>
+                        </div>
+
+                        <div class="grid sm:grid-cols-4 gap-3">
+                            <input type="text" id="search-input" placeholder="Søk i navn, discord, emne..." class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-purple-500 text-white">
+                            <select id="filter-status" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+                                <option value="Alle">Alle Statuser</option>
+                                <option value="Ny">Ny</option>
+                                <option value="Under behandling">Under behandling</option>
+                                <option value="Venter på svar">Venter på svar</option>
+                                <option value="Ferdig behandlet">Ferdig behandlet</option>
+                                <option value="Avvist">Avvist</option>
+                            </select>
+                            <select id="filter-prioritet" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+                                <option value="Alle">Alle Prioriteter</option>
+                                <option value="Lav">Lav</option>
+                                <option value="Normal">Normal</option>
+                                <option value="Høy">Høy</option>
+                                <option value="Kritisk">Kritisk</option>
+                            </select>
+                            <select id="filter-avdeling" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+                                <option value="Alle">Alle Avdelinger</option>
+                                <option value="Staten">Staten</option>
+                                <option value="Kommunen">Kommunen</option>
+                            </select>
+                        </div>
+
+                        <div class="overflow-x-auto rounded-xl border border-slate-800">
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead class="bg-slate-900/80 text-slate-400 uppercase tracking-wider">
+                                    <tr>
+                                        <th class="p-3">Saksnr</th>
+                                        <th class="p-3">Dato</th>
+                                        <th class="p-3">Navn</th>
+                                        <th class="p-3">Discord</th>
+                                        <th class="p-3">Mottaker</th>
+                                        <th class="p-3">Prioritet</th>
+                                        <th class="p-3">Status</th>
+                                        <th class="p-3 text-center">Handling</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cases-table-body" class="divide-y divide-slate-900"></tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="flex items-center justify-between pt-2">
+                            <span class="text-xs text-slate-400" id="pagination-info">Viser 0-0 av 0 saker</span>
+                            <div class="flex gap-2">
+                                <button id="prev-page-btn" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs font-bold disabled:opacity-50 text-white">Forrige</button>
+                                <button id="next-page-btn" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs font-bold disabled:opacity-50 text-white">Neste</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass p-6 rounded-2xl">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4"><i class="fas fa-chart-bar"></i> Saker fordelt på avdeling</h3>
+                        <div class="h-48">
+                            <canvas id="analyticsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="glass p-6 rounded-2xl border border-purple-500/20" id="detail-panel">
+                        <div class="text-center py-12 text-slate-500" id="no-case-selected">
+                            <i class="fas fa-folder-open text-4xl mb-3"></i>
+                            <p class="text-sm">Velg en henvendelse fra listen for å behandle den.</p>
+                        </div>
+
+                        <div id="case-detail-content" class="hidden space-y-5">
+                            <div class="flex justify-between items-start border-b border-slate-900 pb-3">
+                                <div>
+                                    <span id="detail-id" class="text-xs font-mono text-slate-500 block">ID: -</span>
+                                    <h3 id="detail-emne" class="font-bold text-base text-purple-400">Saksemne</h3>
+                                </div>
+                                <span id="detail-dato" class="text-[10px] text-slate-400 bg-slate-900 px-2 py-1 rounded">Dato</span>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3 text-xs">
+                                <div class="bg-slate-900/50 p-2.5 rounded-xl"><b class="text-slate-400 block mb-0.5">Navn</b><span id="detail-navn">-</span></div>
+                                <div class="bg-slate-900/50 p-2.5 rounded-xl"><b class="text-slate-400 block mb-0.5">Discord</b><span id="detail-discord">-</span></div>
+                                <div class="bg-slate-900/50 p-2.5 rounded-xl col-span-2"><b class="text-slate-400 block mb-0.5">E-post</b><span id="detail-epost">-</span></div>
+                                <div class="bg-slate-900/50 p-2.5 rounded-xl"><b class="text-slate-400 block mb-0.5">Avdeling</b><span id="detail-avdeling">-</span></div>
+                                <div class="bg-slate-900/50 p-2.5 rounded-xl"><b class="text-slate-400 block mb-0.5">Type</b><span id="detail-type">-</span></div>
+                            </div>
+
+                            <div class="bg-slate-900/50 p-3 rounded-xl">
+                                <b class="text-xs text-slate-400 block mb-1">Beskrivelse</b>
+                                <p id="detail-beskrivelse" class="text-xs whitespace-pre-wrap leading-relaxed text-slate-300"></p>
+                            </div>
+
+                            <hr class="border-slate-900">
+
+                            <form id="treatment-form" class="space-y-4">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Endre Status</label>
+                                        <select id="action-status" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+                                            <option value="Ny">Ny</option>
+                                            <option value="Under behandling">Under behandling</option>
+                                            <option value="Venter på svar">Venter på svar</option>
+                                            <option value="Ferdig behandlet">Ferdig behandlet</option>
+                                            <option value="Avvist">Avvist</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Prioritet</label>
+                                        <select id="action-prioritet" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+                                            <option value="Lav">Lav</option>
+                                            <option value="Normal">Normal</option>
+                                            <option value="Høy">Høy</option>
+                                            <option value="Kritisk">Kritisk</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Interne Saksnotater</label>
+                                    <textarea id="action-notater" rows="3" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white" placeholder="Skriv referat..."></textarea>
+                                </div>
+                                <button type="submit" class="w-full py-2.5 bg-purple-600 rounded-xl font-bold text-xs text-white hover:bg-purple-700 transition">Lagre Saksendringer</button>
+                            </form>
+
+                            <div class="border-t border-slate-900 pt-3 flex gap-2">
+                                <button onclick="exportCasePDF()" class="flex-1 py-2 border border-slate-800 hover:bg-white/5 rounded-xl text-xs font-bold text-white"><i class="fas fa-file-pdf"></i> Last ned PDF</button>
+                                <button id="delete-case-btn" class="px-3 py-2 bg-rose-950 text-rose-400 border border-rose-900 hover:bg-rose-900 transition rounded-xl text-xs font-bold" title="GDPR Sletting"><i class="fas fa-trash-alt"></i></button>
+                                <button id="anonymize-case-btn" class="px-3 py-2 bg-amber-950 text-amber-400 border border-amber-900 hover:bg-amber-900 transition rounded-xl text-xs font-bold" title="GDPR Anonymisering"><i class="fas fa-user-secret"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass p-6 rounded-2xl max-h-60 overflow-y-auto">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300 mb-2"><i class="fas fa-history"></i> Global Aktivitetslogg</h3>
+                        <div id="log-list" class="space-y-2 text-[11px]"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- PRE-KONFIGURERTE SUPABASE-DETALJER ---
+        const SUPABASE_URL = "https://udschyrfpzoyiqqsjbhu.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVkc2NoeXJmcHpveWlxcXNqYmh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA0MzUsImV4cCI6MjA5NTY1NjQzNX0.p49BZjAPJDpJopr8lBmgKDMnaroK-mQYQUOSQmxcV_E";
+
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let allCases = [];
+        let selectedCaseId = null;
+        let chartInstance = null;
+
+        let currentPage = 1;
+        const rowsPerPage = 10;
+        const DEFAULT_USER = "Unityadmin";
+
+        // Kjører automatisk ved oppstart i steden for pålogging
+        window.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            loadDashboardData();
+            loadActivityLogs();
+            setupRealtimeSubscription();
+            logActivity(DEFAULT_USER, 'Åpnet saksbehandlingssystemet');
+        });
+
+        // --- REALTIDSSYNKRONISERING VIA SUPABASE REALTIME ---
+        function setupRealtimeSubscription() {
+            supabase
+                .channel('realtime-henvendelser')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'henvendelser' }, payload => {
+                    loadDashboardData();
+                })
+                .subscribe();
+        }
+
+        // --- DATALASTING & DASHBOARD ---
+        async function loadDashboardData() {
+            try {
+                const { data: cases, error } = await supabase
+                    .from('henvendelser')
+                    .select('*')
+                    .order('opprettet_dato', { ascending: false });
+
+                if (error) throw error;
+                allCases = cases || [];
+            } catch (err) {
+                console.warn("Klarte ikke hente fra tabell 'henvendelser'. Den mangler nok i Supabase-databasen din ennå.", err.message);
+                allCases = [];
+            }
+
+            renderCounters();
+            renderTable();
+            updateChartData();
+        }
+
+        function renderCounters() {
+            document.getElementById('stat-total').innerText = allCases.length;
+            document.getElementById('stat-nye').innerText = allCases.filter(c => c.status === 'Ny').length;
+            document.getElementById('stat-behandling').innerText = allCases.filter(c => c.status === 'Under behandling').length;
+            document.getElementById('stat-ferdig').innerText = allCases.filter(c => c.status === 'Ferdig behandlet').length;
+            document.getElementById('stat-kritisk').innerText = allCases.filter(c => c.prioritet === 'Kritisk').length;
+        }
+
+        // --- SØK, FILTRERING OG TABELLBYGGING ---
+        function renderTable() {
+            const searchVal = document.getElementById('search-input').value.toLowerCase();
+            const statusFilter = document.getElementById('filter-status').value;
+            const priorityFilter = document.getElementById('filter-prioritet').value;
+            const departmentFilter = document.getElementById('filter-avdeling').value;
+
+            let filtered = allCases.filter(c => {
+                const matchSearch = (c.navn || '').toLowerCase().includes(searchVal) || (c.discord || '').toLowerCase().includes(searchVal) || (c.emne || '').toLowerCase().includes(searchVal);
+                const matchStatus = statusFilter === 'Alle' || c.status === statusFilter;
+                const matchPriority = priorityFilter === 'Alle' || c.prioritet === priorityFilter;
+                const matchDept = departmentFilter === 'Alle' || c.avdeling === departmentFilter;
+                return matchSearch && matchStatus && matchPriority && matchDept;
+            });
+
+            const totalRows = filtered.length;
+            const startIdx = (currentPage - 1) * rowsPerPage;
+            const endIdx = Math.min(startIdx + rowsPerPage, totalRows);
+            const paginated = filtered.slice(startIdx, endIdx);
+
+            document.getElementById('pagination-info').innerText = `Viser ${totalRows > 0 ? startIdx + 1 : 0}-${endIdx} av ${totalRows} saker`;
+            document.getElementById('prev-page-btn').disabled = currentPage === 1;
+            document.getElementById('next-page-btn').disabled = endIdx >= totalRows;
+
+            const tbody = document.getElementById('cases-table-body');
+            tbody.innerHTML = '';
+
+            if (totalRows === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Ingen saker funnet i databasen.</td></tr>`;
+                return;
+            }
+
+            paginated.forEach((c, index) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-white/5 cursor-pointer transition";
+                tr.onclick = () => openCaseDetails(c.id);
+
+                let pColor = c.prioritet === 'Kritisk' ? 'text-rose-500 font-black' : c.prioritet === 'Høy' ? 'text-amber-500' : 'text-slate-400';
+                let sColor = c.status === 'Ny' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : c.status === 'Ferdig behandlet' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-800 text-slate-300';
+
+                tr.innerHTML = `
+                    <td class="p-3 font-mono text-slate-500">#${startIdx + index + 1}</td>
+                    <td class="p-3 text-[11px] text-slate-400">${new Date(c.opprettet_dato).toLocaleDateString()}</td>
+                    <td class="p-3 font-bold">${c.navn}</td>
+                    <td class="p-3 text-slate-400">${c.discord}</td>
+                    <td class="p-3">${c.avdeling}</td>
+                    <td class="p-3 ${pColor}">${c.prioritet}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] border ${sColor}">${c.status}</span></td>
+                    <td class="p-3 text-center"><button class="text-purple-400 hover:underline"><i class="fas fa-eye"></i> Se</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Filter event listeners
+        document.getElementById('search-input').addEventListener('input', () => { currentPage = 1; renderTable(); });
+        document.getElementById('filter-status').addEventListener('change', () => { currentPage = 1; renderTable(); });
+        document.getElementById('filter-prioritet').addEventListener('change', () => { currentPage = 1; renderTable(); });
+        document.getElementById('filter-avdeling').addEventListener('change', () => { currentPage = 1; renderTable(); });
+        document.getElementById('prev-page-btn').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderTable(); } });
+        document.getElementById('next-page-btn').addEventListener('click', () => { currentPage++; renderTable(); });
+
+        // --- SAKSBEHANDLING ---
+        function openCaseDetails(id) {
+            selectedCaseId = id;
+            const c = allCases.find(item => item.id === id);
+            if (!c) return;
+
+            document.getElementById('no-case-selected').classList.add('hidden');
+            document.getElementById('case-detail-content').classList.remove('hidden');
+
+            document.getElementById('detail-id').innerText = `ID: ${c.id}`;
+            document.getElementById('detail-emne').innerText = c.emne;
+            document.getElementById('detail-dato').innerText = new Date(c.opprettet_dato).toLocaleString();
+            document.getElementById('detail-navn').innerText = c.navn;
+            document.getElementById('detail-discord').innerText = c.discord;
+            document.getElementById('detail-epost').innerText = c.epost;
+            document.getElementById('detail-avdeling').innerText = c.avdeling;
+            document.getElementById('detail-type').innerText = c.type_henvendelse;
+            document.getElementById('detail-beskrivelse').innerText = c.beskrivelse;
+
+            document.getElementById('action-status').value = c.status;
+            document.getElementById('action-prioritet').value = c.prioritet;
+            document.getElementById('action-notater').value = c.interne_notater || '';
+        }
+
+        // Lagre endringer
+        document.getElementById('treatment-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!selectedCaseId) return;
+
+            const status = document.getElementById('action-status').value;
+            const prioritet = document.getElementById('action-prioritet').value;
+            const interne_notater = document.getElementById('action-notater').value.trim();
+
+            const { error } = await supabase
+                .from('henvendelser')
+                .update({ status, prioritet, interne_notater, behandlet_av: DEFAULT_USER, sist_oppdatert: new Date().toISOString() })
+                .eq('id', selectedCaseId);
+
+            if (error) {
+                showNotification('Kunne ikke oppdatere sak: ' + error.message, 'error');
+            } else {
+                showNotification('Saken ble oppdatert!', 'success');
+                await logActivity(DEFAULT_USER, `Endret sak (Status: ${status})`);
+                loadDashboardData();
+            }
+        });
+
+        // --- GDPR & EKSPORT ---
+        document.getElementById('delete-case-btn').addEventListener('click', async () => {
+            if (!selectedCaseId || !confirm('Slette denne saken permanent i henhold til GDPR?')) return;
+            const { error } = await supabase.from('henvendelser').delete().eq('id', selectedCaseId);
+            if (!error) {
+                showNotification('Saken slettet permanent.', 'success');
+                await logActivity(DEFAULT_USER, `Slettet en sak permanent pga. GDPR.`);
+                document.getElementById('case-detail-content').classList.add('hidden');
+                document.getElementById('no-case-selected').classList.remove('hidden');
+                loadDashboardData();
+            }
+        });
+
+        document.getElementById('anonymize-case-btn').addEventListener('click', async () => {
+            if (!selectedCaseId || !confirm('Anonymisere avsenderdata for denne saken?')) return;
+            const { error } = await supabase
+                .from('henvendelser')
+                .update({ navn: 'ANONYMISERT', discord: 'ANONYM#0000', epost: 'anonym@unityrollespill.no' })
+                .eq('id', selectedCaseId);
+
+            if (!error) {
+                showNotification('Saken ble anonymisert.', 'success');
+                await logActivity(DEFAULT_USER, `Anonymiserte personopplysninger på en sak.`);
+                loadDashboardData();
+                openCaseDetails(selectedCaseId);
+            }
+        });
+
+        function exportCasePDF() {
+            const c = allCases.find(item => item.id === selectedCaseId);
+            if (!c) return;
+            const txt = `=== UNITY ROLLESPILL SAKSDOKUMENT ===\n\nSak-ID: ${c.id}\nDato: ${c.opprettet_dato}\nNavn: ${c.navn}\nDiscord: ${c.discord}\nEmne: ${c.emne}\nBeskrivelse:\n${c.beskrivelse}\n\nStatus: ${c.status}\nNotater:\n${c.interne_notater || ''}`;
+            const blob = new Blob([txt], { type: 'application/pdf' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Sak-${c.id}.pdf`;
+            link.click();
+        }
+
+        function exportAllCSV() {
+            let csv = 'Saksnummer,Dato,Navn,Discord,Avdeling,Emne,Status,Prioritet\n';
+            allCases.forEach((c, i) => {
+                csv += `"${i+1}","${c.opprettet_dato}","${c.navn}","${c.discord}","${c.avdeling}","${c.emne}","${c.status}","${c.prioritet}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'Unity_Saker_Eksport.csv';
+            link.click();
+        }
+
+        // --- UTILITY LOGGING OG VARSLINGER ---
+        async function logActivity(bruker, handling) {
+            try {
+                await supabase.from('aktivitetslogg').insert([{ bruker, handling }]);
+            } catch(e) {
+                console.log("Klarte ikke lagre logg til skyen. Tabellen 'aktivitetslogg' mangler nok.");
+            }
+            
+            // Lokalt display i panelet slik at det fungerer uansett
+            const container = document.getElementById('log-list');
+            if (container) {
+                const div = document.createElement('div');
+                div.className = "p-1.5 border-b border-slate-900/40";
+                div.innerHTML = `<span class="text-purple-400 font-bold">${bruker}</span>: ${handling} <span class="text-slate-500">(${new Date().toLocaleTimeString()})</span>`;
+                container.insertBefore(div, container.firstChild);
+            }
+        }
+
+        function showNotification(message, type = 'success') {
+            const container = document.getElementById('notification-container');
+            const notif = document.createElement('div');
+            notif.className = `p-4 rounded-xl shadow-xl flex items-center gap-3 transition-all duration-300 border text-xs ${
+                type === 'success' ? 'bg-emerald-950 text-emerald-400 border-emerald-800' : 'bg-rose-950 text-rose-400 border-rose-800'
+            }`;
+            notif.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i> <span>${message}</span>`;
+            container.appendChild(notif);
+            setTimeout(() => { notif.style.opacity = '0'; setTimeout(() => notif.remove(), 300); }, 4000);
+        }
+
+        // --- CHART INITIALISERING ---
+        function initChart() {
+            const ctx = document.getElementById('analyticsChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Staten', 'Kommunen'],
+                    datasets: [{
+                        label: 'Antall henvendelser',
+                        data: [0, 0],
+                        backgroundColor: ['rgba(29, 78, 216, 0.6)', 'rgba(109, 40, 217, 0.6)'],
+                        borderColor: ['#1d4ed8', '#6d28d9'],
+                        borderWidth: 1
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+            });
+        }
+
+        function updateChartData() {
+            if (!chartInstance) return;
+            const statenCount = allCases.filter(c => c.avdeling === 'Staten').length;
+            const kommunenCount = allCases.filter(c => c.avdeling === 'Kommunen').length;
+            chartInstance.data.datasets[0].data = [statenCount, kommunenCount];
+            chartInstance.update();
+        }
+
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            document.documentElement.classList.toggle('light');
+        });
+    </script>
+</body>
+</html>
