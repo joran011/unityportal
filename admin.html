@@ -212,7 +212,8 @@
         const SUPABASE_URL = "https://udschyrfpzoyiqqsjbhu.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVkc2NoeXJmcHpveWlxcXNqYmh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA0MzUsImV4cCI6MjA5NTY1NjQzNX0.p49BZjAPJDpJopr8lBmgKDMnaroK-mQYQUOSQmxcV_E";
 
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Vi bruker et unikt navn (db) slik at det aldri krasjer med Supabase-biblioteket
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let allCases = [];
         let selectedCaseId = null;
@@ -222,18 +223,17 @@
         const rowsPerPage = 10;
         const DEFAULT_USER = "Unityadmin";
 
-        // Kjører automatisk ved oppstart i steden for pålogging
+        // Kjører automatisk ved oppstart
         window.addEventListener('DOMContentLoaded', () => {
             initChart();
             loadDashboardData();
-            loadActivityLogs();
             setupRealtimeSubscription();
             logActivity(DEFAULT_USER, 'Åpnet saksbehandlingssystemet');
         });
 
         // --- REALTIDSSYNKRONISERING VIA SUPABASE REALTIME ---
         function setupRealtimeSubscription() {
-            supabase
+            db
                 .channel('realtime-henvendelser')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'henvendelser' }, payload => {
                     loadDashboardData();
@@ -244,7 +244,7 @@
         // --- DATALASTING & DASHBOARD ---
         async function loadDashboardData() {
             try {
-                const { data: cases, error } = await supabase
+                const { data: cases, error } = await db
                     .from('henvendelser')
                     .select('*')
                     .order('opprettet_dato', { ascending: false });
@@ -252,7 +252,7 @@
                 if (error) throw error;
                 allCases = cases || [];
             } catch (err) {
-                console.warn("Klarte ikke hente fra tabell 'henvendelser'. Den mangler nok i Supabase-databasen din ennå.", err.message);
+                console.warn("Klarte ikke hente fra tabell 'henvendelser'.", err.message);
                 allCases = [];
             }
 
@@ -297,7 +297,7 @@
             tbody.innerHTML = '';
 
             if (totalRows === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Ingen saker funnet i databasen.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Ingen saker funnet i databasen. Må kanskje oppfriskes.</td></tr>`;
                 return;
             }
 
@@ -364,7 +364,7 @@
             const prioritet = document.getElementById('action-prioritet').value;
             const interne_notater = document.getElementById('action-notater').value.trim();
 
-            const { error } = await supabase
+            const { error } = await db
                 .from('henvendelser')
                 .update({ status, prioritet, interne_notater, behandlet_av: DEFAULT_USER, sist_oppdatert: new Date().toISOString() })
                 .eq('id', selectedCaseId);
@@ -373,7 +373,7 @@
                 showNotification('Kunne ikke oppdatere sak: ' + error.message, 'error');
             } else {
                 showNotification('Saken ble oppdatert!', 'success');
-                await logActivity(DEFAULT_USER, `Endret sak (Status: ${status})`);
+                await logActivity(DEFAULT_USER, `Endret sak til status: ${status}`);
                 loadDashboardData();
             }
         });
@@ -381,7 +381,7 @@
         // --- GDPR & EKSPORT ---
         document.getElementById('delete-case-btn').addEventListener('click', async () => {
             if (!selectedCaseId || !confirm('Slette denne saken permanent i henhold til GDPR?')) return;
-            const { error } = await supabase.from('henvendelser').delete().eq('id', selectedCaseId);
+            const { error } = await db.from('henvendelser').delete().eq('id', selectedCaseId);
             if (!error) {
                 showNotification('Saken slettet permanent.', 'success');
                 await logActivity(DEFAULT_USER, `Slettet en sak permanent pga. GDPR.`);
@@ -393,7 +393,7 @@
 
         document.getElementById('anonymize-case-btn').addEventListener('click', async () => {
             if (!selectedCaseId || !confirm('Anonymisere avsenderdata for denne saken?')) return;
-            const { error } = await supabase
+            const { error } = await db
                 .from('henvendelser')
                 .update({ navn: 'ANONYMISERT', discord: 'ANONYM#0000', epost: 'anonym@unityrollespill.no' })
                 .eq('id', selectedCaseId);
@@ -410,10 +410,10 @@
             const c = allCases.find(item => item.id === selectedCaseId);
             if (!c) return;
             const txt = `=== UNITY ROLLESPILL SAKSDOKUMENT ===\n\nSak-ID: ${c.id}\nDato: ${c.opprettet_dato}\nNavn: ${c.navn}\nDiscord: ${c.discord}\nEmne: ${c.emne}\nBeskrivelse:\n${c.beskrivelse}\n\nStatus: ${c.status}\nNotater:\n${c.interne_notater || ''}`;
-            const blob = new Blob([txt], { type: 'application/pdf' });
+            const blob = new Blob([txt], { type: 'text/plain' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `Sak-${c.id}.pdf`;
+            link.download = `Sak-${c.id}.txt`;
             link.click();
         }
 
@@ -432,12 +432,11 @@
         // --- UTILITY LOGGING OG VARSLINGER ---
         async function logActivity(bruker, handling) {
             try {
-                await supabase.from('aktivitetslogg').insert([{ bruker, handling }]);
+                await db.from('aktivitetslogg').insert([{ bruker, handling }]);
             } catch(e) {
-                console.log("Klarte ikke lagre logg til skyen. Tabellen 'aktivitetslogg' mangler nok.");
+                // Feiler lydløst hvis tabellen ikke finnes
             }
             
-            // Lokalt display i panelet slik at det fungerer uansett
             const container = document.getElementById('log-list');
             if (container) {
                 const div = document.createElement('div');
