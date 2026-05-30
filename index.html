@@ -82,13 +82,13 @@
     <section id="om" class="max-w-7xl mx-auto px-4 py-16 grid md:grid-cols-3 gap-8">
         <div class="glass p-8 rounded-2xl shadow-xl transition hover:-translate-y-1">
             <div class="w-12 h-12 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center text-xl mb-4"><i class="fas fa-balance-scale"></i></div>
-            <h3 class="text-xl font-bold mb-2">Kontakt Staten</h3>
-            <p class="text-sm text-slate-400">Henvendelser angående politi, rettsvesen, militære eller overordnede statlige lisenser og klager.</p>
+            <h3 class="text-xl font-bold mb-2">Kontakt Administrasjonen</h3>
+            <p class="text-sm text-slate-400">Henvendelser angående medlemmer, utestengelser og klager.</p>
         </div>
         <div class="glass p-8 rounded-2xl shadow-xl transition hover:-translate-y-1">
             <div class="w-12 h-12 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center text-xl mb-4"><i class="fas fa-city"></i></div>
-            <h3 class="text-xl font-bold mb-2">Kontakt Kommunen</h3>
-            <p class="text-sm text-slate-400">Søknader om bedriftsbevillinger, eiendom, kjøretøy, NAV-tjenester eller lokale arrangementer.</p>
+            <h3 class="text-xl font-bold mb-2">Kontakt Unity Kommune</h3>
+            <p class="text-sm text-slate-400">Søknader om bedriftsbevillinger, eiendom, eller lokale arrangementer.</p>
         </div>
         <div class="glass p-8 rounded-2xl shadow-xl transition hover:-translate-y-1">
             <div class="w-12 h-12 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center text-xl mb-4"><i class="fas fa-shield-alt"></i></div>
@@ -103,7 +103,7 @@
             <form id="public-case-form" class="space-y-5">
                 <div class="grid sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Fullt Navn (In-Game)</label>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Fivem Navn</label>
                         <input type="text" id="form-navn" required class="w-full bg-slate-950/50 light:bg-white border border-slate-800 light:border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition">
                     </div>
                     <div>
@@ -119,8 +119,8 @@
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Mottakeravdeling</label>
                         <select id="form-avdeling" required class="w-full bg-slate-950 light:bg-white border border-slate-800 light:border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition">
-                            <option value="Staten">Staten (Politi, Regjering)</option>
-                            <option value="Kommunen">Kommunen (Bedrift, Eiendom)</option>
+                            <option value="Staten">Administrasjonen (Klager osv)</option>
+                            <option value="Kommunen">Kommunen (Bedrift osv)</option>
                         </select>
                     </div>
                     <div>
@@ -128,7 +128,7 @@
                         <select id="form-type" required class="w-full bg-slate-950 light:bg-white border border-slate-800 light:border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition">
                             <option value="Søknad">Søknad / Bevilling</option>
                             <option value="Klage">Formell Klage</option>
-                            <option value="Anmeldelse">Anmeldelse / Tips</option>
+                            <option value="Anmeldelse">Tips</option>
                             <option value="Annet">Annet</option>
                         </select>
                     </div>
@@ -158,7 +158,7 @@
                     <li>Utsagn eller falske anklager straffes in-game.</li>
                     <li>Saksbehandlingstid er normalt 24-48 timer.</li>
                     <li>Noter korrekt Discord ID for tilbakesending av svar.</li>
-                    <li>Unngå sensitive personopplysninger (OOC-info).</li>
+                    <li>Unngå sensitive personopplysninger (UAK-info).</li>
                 </ul>
             </section>
 
@@ -179,7 +179,7 @@
     </main>
 
     <footer class="w-full border-t border-slate-800/60 light:border-slate-200 mt-24 py-8 text-center text-xs text-slate-500">
-        <p>&copy; 2026 Unity Rollespill. Utviklet som saksbehandlingssystem for Staten & Kommunen.</p>
+        <p>&copy; 2026 Unity Rollespill.</p>
     </footer>
 
    <script>
